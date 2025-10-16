@@ -1,7 +1,7 @@
 pipeline {
     agent any
-
-    stage('Check Python and pip version') {
+    stages {
+          stage('Check Python and pip version') {
             steps {
                 script {
                     try {
@@ -21,7 +21,6 @@ pipeline {
                 }
             }
         }
-    stages {
         stage('Checkout') {
             steps {
                 git branch: 'main', 
