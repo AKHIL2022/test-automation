@@ -4,7 +4,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', 
+                    url: 'https://github.com/AKHIL2022/test-automation.git'
             }
         }
 
