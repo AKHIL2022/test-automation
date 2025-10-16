@@ -12,10 +12,18 @@ pipeline {
         stage('Setup') {
             steps {
                 sh '''
-                    # Install Python3 and pip3 (Ubuntu/Debian-based agent)
-                    apt-get update
-                    apt-get install -y python3 python3-pip
-                    # Verify installations
+                    # Install pyenv to manage Python versions (no root needed)
+                    if [ ! -d ~/.pyenv ]; then
+                        curl https://pyenv.run | bash
+                    fi
+                    # Set up environment variables for pyenv
+                    export PATH="$HOME/.pyenv/bin:$PATH"
+                    eval "$(pyenv init --path)"
+                    eval "$(pyenv init -)"
+                    # Install Python 3.12 if not already installed
+                    pyenv install 3.12.3 -s  # -s skips if already installed
+                    pyenv global 3.12.3
+                    # Verify Python and pip
                     python3 --version
                     pip3 --version
                     # Install dependencies from requirements.txt
@@ -26,7 +34,12 @@ pipeline {
 
         stage('Run Robot Framework Tests') {
             steps {
-                sh 'robot --outputdir robot-results tests/'
+                sh '''
+                    export PATH="$HOME/.pyenv/bin:$PATH"
+                    eval "$(pyenv init --path)"
+                    eval "$(pyenv init -)"
+                    robot --outputdir robot-results tests/
+                '''
             }
             post {
                 always {
