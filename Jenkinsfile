@@ -35,30 +35,31 @@ pipeline {
                 '''
             }
         }
-        post {
-            always {
-                script {
-                    // Publish Robot reports
-                    robot outputPath: 'robot-results'
-                    // Generate timestamp for artifacts
-                    def timestamp = sh(script: 'date +%Y-%m-%d_%H-%M-%S', returnStdout: true).trim()
-                    def zipName = "robot-results-${timestamp}.zip"
-                    // Create zip of all artifacts
-                    sh """
-                    zip -r ${zipName} robot-results/
+    }
+    
+    post {
+        always {
+            script {
+                // Publish Robot reports
+                robot outputPath: 'robot-results'
+                // Generate timestamp for artifacts
+                def timestamp = sh(script: 'date +%Y-%m-%d_%H-%M-%S', returnStdout: true).trim()
+                def zipName = "robot-results-${timestamp}.zip"
+                // Create zip of all artifacts
+                sh """
+                zip -r ${zipName} robot-results/
                 """
-                    // Archive the timestamped zip (for single download) and unzipped contents
-                    archiveArtifacts artifacts: "${zipName}, robot-results/**",
-                    allowEmptyArchive: true,
-                    fingerprint: true
-                }
+                // Archive the timestamped zip (for single download) and unzipped contents
+                archiveArtifacts artifacts: "${zipName}, robot-results/**",
+                allowEmptyArchive: true,
+                fingerprint: true
             }
-            success {
-                echo 'All Robot tests passed! View Robot reports on build page.'
-            }
-            failure {
-                echo 'Robot tests failed - check Robot reports on build page and artifacts.'
-            }
+        }
+        success {
+            echo 'All Robot tests passed! View Robot reports on build page.'
+        }
+        failure {
+            echo 'Robot tests failed - check Robot reports on build page and artifacts.'
         }
     }
 }
