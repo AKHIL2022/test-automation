@@ -37,19 +37,26 @@ pipeline {
                     robot --outputdir robot-results tests/
                 '''
             }
-            post {
-                always {
-                    robot outputPath: 'robot-results'
-                }
-            }
-        }
-    }
-
-    post {
+         post {
         always {
-            archiveArtifacts artifacts: 'robot-results/**', 
-                             allowEmptyArchive: true, 
-                             fingerprint: true
+            script {
+                // Publish Robot reports
+                robot outputPath: 'robot-results'
+                
+                // Generate timestamp for artifacts
+                def timestamp = sh(script: 'date +%Y-%m-%d_%H-%M-%S', returnStdout: true).trim()
+                def zipName = "robot-results-${timestamp}.zip"
+                
+                // Create zip of all artifacts
+                sh """
+                    zip -r ${zipName} robot-results/
+                """
+                
+                // Archive the timestamped zip (for single download) and unzipped contents
+                archiveArtifacts artifacts: "${zipName}, robot-results/**", 
+                                 allowEmptyArchive: true, 
+                                 fingerprint: true
+            }
         }
         success {
             echo 'All Robot tests passed! View Robot reports on build page.'
