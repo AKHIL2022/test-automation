@@ -1,7 +1,8 @@
 pipeline {
     agent any
+
     stages {
-          stage('Check Python and pip version') {
+        stage('Check Python and pip version') {
             steps {
                 script {
                     try {
@@ -21,6 +22,7 @@ pipeline {
                 }
             }
         }
+
         stage('Checkout') {
             steps {
                 git branch: 'main', 
@@ -30,13 +32,28 @@ pipeline {
 
         stage('Setup') {
             steps {
-                sh 'pip install -r requirements.txt'
+                sh '''
+                    # Create virtual environment
+                    python3 -m venv venv
+                    # Activate virtual environment
+                    . venv/bin/activate
+                    # Verify Python and pip in venv
+                    python --version
+                    pip --version
+                    # Install dependencies in venv
+                    pip install -r requirements.txt
+                '''
             }
         }
 
         stage('Run Robot Framework Tests') {
             steps {
-                sh 'robot --outputdir robot-results tests/'
+                sh '''
+                    # Activate virtual environment
+                    . venv/bin/activate
+                    # Run Robot tests
+                    robot --outputdir robot-results tests/
+                '''
             }
             post {
                 always {
