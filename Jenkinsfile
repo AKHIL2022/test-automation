@@ -27,12 +27,21 @@ pipeline {
         }
         stage('Run Robot Framework Tests') {
             steps {
-                sh '''
-                    # Activate virtual environment
-                    . venv/bin/activate
-                    # Run Robot tests
-                    robot --outputdir robot-results tests/
-                '''
+                script {
+                    // Generate timestamp for folder name
+                    def timestamp = sh(script: 'date +%Y-%m-%d_%H-%M-%S', returnStdout: true).trim()
+                    // Create timestamped output directory inside robot-results with new naming pattern
+                    def resultDir = "robot-results/test-results-${timestamp}"
+                    
+                    sh """
+                        # Activate virtual environment
+                        . venv/bin/activate
+                        # Create the robot-results directory if it doesn't exist
+                        mkdir -p robot-results
+                        # Run Robot tests with output to the timestamped directory
+                        robot --outputdir ${resultDir} tests/
+                    """
+                }
             }
         }
     }
@@ -40,21 +49,24 @@ pipeline {
     post {
         always {
             script {
-                // Publish Robot reports
-                robot outputPath: 'robot-results'
+                // Find the most recent results folder with the new naming pattern
+                def latestDir = sh(
+                    script: 'ls -td robot-results/test-results-* | head -1',
+                    returnStdout: true
+                ).trim()
                 
-                // Generate timestamp for artifacts folder
-                def timestamp = sh(script: 'date +%Y-%m-%d_%H-%M-%S', returnStdout: true).trim()
-                def timestampedFolder = "test-results-${timestamp}"
+                echo "Publishing Robot results from: ${latestDir}"
                 
-                // Create timestamped folder and copy results
-                sh """
-                    mkdir -p ${timestampedFolder}
-                    cp -r robot-results/* ${timestampedFolder}/
-                """
+                // Publish Robot reports from the latest directory
+                robot outputPath: "${latestDir}"
                 
-                // Archive both the original and timestamped folders
-                archiveArtifacts artifacts: "robot-results/**, ${timestampedFolder}/**",
+                // Archive all robot-results directory (including all timestamped folders)
+                archiveArtifacts artifacts: "robot-results/**",
+                    allowEmptyArchive: true,
+                    fingerprint: true
+                    
+                // Optional: Also archive just the latest results for quick access
+                archiveArtifacts artifacts: "${latestDir}/**",
                     allowEmptyArchive: true,
                     fingerprint: true
             }
