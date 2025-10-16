@@ -2,27 +2,6 @@ pipeline {
     agent any
 
     stages {
-        stage('Check Python and pip version') {
-            steps {
-                script {
-                    try {
-                        // Check Python version
-                        def pythonVersion = sh(script: 'python3 --version', returnStdout: true).trim()
-                        echo "✅ Python is installed: ${pythonVersion}"
-                        
-                        // Check pip version
-                        def pipVersion = sh(script: 'pip3 --version', returnStdout: true).trim()
-                        echo "✅ pip is installed: ${pipVersion}"
-                        // Check venv
-                        def venv = sh(script: 'python3 -m venv --help', returnStdout: true).trim()
-                        echo "✅ venv is installed: ${venv}"                        
-                    } catch (Exception e) {
-                        error "❌ Python or pip is not installed: ${e.message}"
-                    }
-                }
-            }
-        }
-
         stage('Checkout') {
             steps {
                 git branch: 'main', 
