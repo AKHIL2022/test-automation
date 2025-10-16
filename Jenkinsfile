@@ -30,16 +30,17 @@ pipeline {
                 script {
                     // Generate timestamp for folder name
                     def timestamp = sh(script: 'date +%Y-%m-%d_%H-%M-%S', returnStdout: true).trim()
-                    // Create timestamped output directory inside robot-results with new naming pattern
+                    // Create timestamped output directory inside robot-results
                     def resultDir = "robot-results/test-results-${timestamp}"
                     
                     sh """
                         # Activate virtual environment
                         . venv/bin/activate
-                        # Create the robot-results directory if it doesn't exist
-                        mkdir -p robot-results
+                        # Create the specific results directory
+                        mkdir -p ${resultDir}
                         # Run Robot tests with output to the timestamped directory
-                        robot --outputdir ${resultDir} tests/
+                        # Use absolute path and ensure output goes exactly where we want
+                        cd ${resultDir} && robot --outputdir . --log log.html --report report.html --output output.xml ../../tests/
                     """
                 }
             }
@@ -49,7 +50,7 @@ pipeline {
     post {
         always {
             script {
-                // Find the most recent results folder with the new naming pattern
+                // Find the most recent results folder
                 def latestDir = sh(
                     script: 'ls -td robot-results/test-results-* | head -1',
                     returnStdout: true
@@ -60,13 +61,8 @@ pipeline {
                 // Publish Robot reports from the latest directory
                 robot outputPath: "${latestDir}"
                 
-                // Archive all robot-results directory (including all timestamped folders)
+                // Archive all robot-results directory
                 archiveArtifacts artifacts: "robot-results/**",
-                    allowEmptyArchive: true,
-                    fingerprint: true
-                    
-                // Optional: Also archive just the latest results for quick access
-                archiveArtifacts artifacts: "${latestDir}/**",
                     allowEmptyArchive: true,
                     fingerprint: true
             }
