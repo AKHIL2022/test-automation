@@ -1,7 +1,26 @@
 pipeline {
     agent any
-
     stages {
+          stage('Check Python and pip version') {
+            steps {
+                script {
+                    try {
+                        // Check Python version
+                        def pythonVersion = sh(script: 'python3 --version', returnStdout: true).trim()
+                        echo "✅ Python is installed: ${pythonVersion}"
+                        
+                        // Check pip version
+                        def pipVersion = sh(script: 'pip3 --version', returnStdout: true).trim()
+                        echo "✅ pip is installed: ${pipVersion}"
+                        // Check venv
+                        def venv = sh(script: 'python3 -m venv --help', returnStdout: true).trim()
+                        echo "✅ venv is installed: ${venv}"                        
+                    } catch (Exception e) {
+                        error "❌ Python or pip is not installed: ${e.message}"
+                    }
+                }
+            }
+        }
         stage('Checkout') {
             steps {
                 git branch: 'main', 
@@ -11,35 +30,13 @@ pipeline {
 
         stage('Setup') {
             steps {
-                sh '''
-                    # Install pyenv to manage Python versions (no root needed)
-                    if [ ! -d ~/.pyenv ]; then
-                        curl https://pyenv.run | bash
-                    fi
-                    # Set up environment variables for pyenv
-                    export PATH="$HOME/.pyenv/bin:$PATH"
-                    eval "$(pyenv init --path)"
-                    eval "$(pyenv init -)"
-                    # Install Python 3.12 if not already installed
-                    pyenv install 3.12.3 -s  # -s skips if already installed
-                    pyenv global 3.12.3
-                    # Verify Python and pip
-                    python3 --version
-                    pip3 --version
-                    # Install dependencies from requirements.txt
-                    pip3 install -r requirements.txt
-                '''
+                sh 'pip install -r requirements.txt'
             }
         }
 
         stage('Run Robot Framework Tests') {
             steps {
-                sh '''
-                    export PATH="$HOME/.pyenv/bin:$PATH"
-                    eval "$(pyenv init --path)"
-                    eval "$(pyenv init -)"
-                    robot --outputdir robot-results tests/
-                '''
+                sh 'robot --outputdir robot-results tests/'
             }
             post {
                 always {
