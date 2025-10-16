@@ -42,17 +42,21 @@ pipeline {
             script {
                 // Publish Robot reports
                 robot outputPath: 'robot-results'
-                // Generate timestamp for artifacts
+                
+                // Generate timestamp for artifacts folder
                 def timestamp = sh(script: 'date +%Y-%m-%d_%H-%M-%S', returnStdout: true).trim()
-                def zipName = "robot-results-${timestamp}.zip"
-                // Create zip of all artifacts
+                def timestampedFolder = "test-results-${timestamp}"
+                
+                // Create timestamped folder and copy results
                 sh """
-                zip -r ${zipName} robot-results/
+                    mkdir -p ${timestampedFolder}
+                    cp -r robot-results/* ${timestampedFolder}/
                 """
-                // Archive the timestamped zip (for single download) and unzipped contents
-                archiveArtifacts artifacts: "${zipName}, robot-results/**",
-                allowEmptyArchive: true,
-                fingerprint: true
+                
+                // Archive both the original and timestamped folders
+                archiveArtifacts artifacts: "robot-results/**, ${timestampedFolder}/**",
+                    allowEmptyArchive: true,
+                    fingerprint: true
             }
         }
         success {
