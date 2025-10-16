@@ -28,18 +28,18 @@ pipeline {
             }
         }
 
-        stage('Run Robot Framework Tests') {
+               stage('Run Robot Framework Tests') {
             steps {
                 sh '''
                     # Activate virtual environment
                     . venv/bin/activate
                     # Run Robot tests
-                    robot --outputdir robot-results tests
+                    robot --outputdir robot-results tests/
                 '''
             }
             post {
                 always {
-                    robot 'robot-results/output.xml'  // Native Robot report
+                    robot outputPath: 'robot-results'
                 }
             }
         }
@@ -47,7 +47,6 @@ pipeline {
 
     post {
         always {
-            // Archive downloadable artifacts: Only Robot reports
             archiveArtifacts artifacts: 'robot-results/**', 
                              allowEmptyArchive: true, 
                              fingerprint: true
