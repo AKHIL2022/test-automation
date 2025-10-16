@@ -31,7 +31,7 @@ pipeline {
                     # Activate virtual environment
                     . venv/bin/activate
                     # Run Robot tests
-                    robot --outputdir robot-results tests/
+                    robot --outputdir robot-results tests
                 '''
             }
             post {
