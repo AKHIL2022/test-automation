@@ -1,26 +1,7 @@
 pipeline {
     agent any
+
     stages {
-          stage('Check Python and pip version') {
-            steps {
-                script {
-                    try {
-                        // Check Python version
-                        def pythonVersion = sh(script: 'python3 --version', returnStdout: true).trim()
-                        echo "✅ Python is installed: ${pythonVersion}"
-                        
-                        // Check pip version
-                        def pipVersion = sh(script: 'pip3 --version', returnStdout: true).trim()
-                        echo "✅ pip is installed: ${pipVersion}"
-                        // Check venv
-                        def venv = sh(script: 'python3 -m venv --help', returnStdout: true).trim()
-                        echo "✅ venv is installed: ${venv}"                        
-                    } catch (Exception e) {
-                        error "❌ Python or pip is not installed: ${e.message}"
-                    }
-                }
-            }
-        }
         stage('Checkout') {
             steps {
                 git branch: 'main', 
@@ -30,7 +11,16 @@ pipeline {
 
         stage('Setup') {
             steps {
-                sh 'pip install -r requirements.txt'
+                sh '''
+                    # Install Python3 and pip3 (Ubuntu/Debian-based agent)
+                    sudo apt-get update
+                    sudo apt-get install -y python3 python3-pip
+                    # Verify installations
+                    python3 --version
+                    pip3 --version
+                    # Install dependencies from requirements.txt
+                    pip3 install -r requirements.txt
+                '''
             }
         }
 
