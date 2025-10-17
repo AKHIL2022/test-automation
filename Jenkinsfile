@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         TIMESTAMP = "${sh(script: 'date +%Y-%m-%d_%H-%M-%S', returnStdout: true).trim()}"
-        OUTPUT_DIR = "robot-results/${TIMESTAMP}"
+        OUTPUT_DIR = "robot-results/mhs-reporting/${TIMESTAMP}"
     }
     stages {
         stage('Checkout') {
