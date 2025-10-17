@@ -14,6 +14,8 @@ pipeline {
         stage('Setup') {
             steps {
                 sh '''
+                    # Clean up old timestamped folders (keep latest 10)
+                    find robot-results/*/ -maxdepth 0 -type d | sort -r | tail -n +11 | xargs -r rm -rf
                     # Create virtual environment
                     python3 -m venv venv
                     # Activate virtual environment
