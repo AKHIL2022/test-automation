@@ -20,6 +20,8 @@ pipeline {
                     pip --version
                     # Install dependencies in venv
                     pip install -r requirements.txt
+                    # Ensure robot-results directory exists
+                    mkdir -p robot-results
                 '''
             }
         }
@@ -54,17 +56,9 @@ pipeline {
     post {
         always {
             script {
-                // Archive the timestamped folder
+                // Archive the timestamped folder contents
                 def timestamp = env.TIMESTAMP
-                def zipName = "robot-results-${timestamp}.zip"
-                
-                // Create zip of the timestamped folder
-                sh """
-                    zip -r ${zipName} robot-results/${timestamp}/
-                """
-                
-                // Archive the timestamped zip and the timestamped folder contents
-                archiveArtifacts artifacts: "${zipName}, robot-results/${timestamp}/**", 
+                archiveArtifacts artifacts: "robot-results/${timestamp}/**", 
                                  allowEmptyArchive: true, 
                                  fingerprint: true
             }
