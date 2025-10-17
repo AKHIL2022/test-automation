@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    environment {
+        PYTHONPATH = "${WORKSPACE}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -18,7 +22,7 @@ pipeline {
                     # Verify Python and pip in venv
                     python --version
                     pip --version
-                    # Install dependencies in venv
+                    # Install dependencies in venv (robotframework should be in requirements.txt)
                     pip install -r requirements.txt
                     # Ensure robot-results directory exists
                     mkdir -p robot-results
@@ -34,20 +38,37 @@ pipeline {
                     // Define timestamped output directory
                     def outputDir = "robot-results/${timestamp}"
                     
+                    // Debug: Print timestamp and output directory
+                    echo "Generated timestamp: ${timestamp}"
+                    echo "Output directory: ${outputDir}"
+                    
+                    // Store timestamp in environment variable
+                    env.TIMESTAMP = timestamp
+                    
+                    // Run robot command and ignore test failure exit code
                     sh """
                         # Activate virtual environment
                         . venv/bin/activate
                         # Run Robot tests with timestamped output directory
                         robot --outputdir ${outputDir} tests/
+                        # Debug: List output files
+                        ls -l ${outputDir} || echo "No output files generated"
                     """
-                    
-                    // Store timestamp for use in post section
-                    env.TIMESTAMP = timestamp
                 }
             }
             post {
                 always {
-                    robot outputPath: "robot-results/${env.TIMESTAMP}"
+                    script {
+                        // Use local variable to ensure timestamp access
+                        def outputDir = env.TIMESTAMP ? "robot-results/${env.TIMESTAMP}" : null
+                        if (outputDir && fileExists(outputDir)) {
+                            echo "Publishing Robot reports from ${outputDir}"
+                            // Publish Robot reports
+                            robot outputPath: outputDir
+                        } else {
+                            echo "Output directory ${outputDir} does not exist or TIMESTAMP is not set. Skipping Robot report publishing."
+                        }
+                    }
                 }
             }
         }
@@ -56,18 +77,23 @@ pipeline {
     post {
         always {
             script {
-                // Archive the timestamped folder contents
-                def timestamp = env.TIMESTAMP
-                archiveArtifacts artifacts: "robot-results/${timestamp}/**", 
-                                 allowEmptyArchive: true, 
-                                 fingerprint: true
+                // Archive the timestamped folder contents if it exists
+                def outputDir = env.TIMESTAMP ? "robot-results/${env.TIMESTAMP}" : null
+                if (outputDir && fileExists(outputDir)) {
+                    echo "Archiving artifacts from ${outputDir}"
+                    archiveArtifacts artifacts: "${outputDir}/**", 
+                                    allowEmptyArchive: true, 
+                                    fingerprint: true
+                } else {
+                    echo "No artifacts to archive: ${outputDir} does not exist or TIMESTAMP is not set."
+                }
             }
         }
         success {
-            echo 'All Robot tests passed! View Robot reports on build page.'
+            echo 'Pipeline completed! View Robot reports on build page if available.'
         }
         failure {
-            echo 'Robot tests failed - check Robot reports on build page and artifacts.'
+            echo 'Pipeline execution issues - check logs and Robot reports on build page if available.'
         }
     }
 }
